@@ -1,19 +1,9 @@
-# Stage 1: Build Angular app
-FROM node:18 AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build --configuration=production --output-path=dist/my-login-app
+# Copy built Angular app
+COPY dist/my-login-app /usr/share/nginx/html/my-login-app
 
-# Stage 2: Serve with NGINX
-FROM nginx:1.25-alpine
+# Copy template file and create env.js dynamically at container startup
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
-# Copy built app
-COPY --from=build /app/dist/my-login-app /usr/share/nginx/html/my-login-app
-
-# Copy env template
-COPY src/assets/env.template.js /usr/share/nginx/html/my-login-app/assets/env.template.js
-
-# Replace placeholder at container startup and start NGINX
-CMD ["/bin/sh", "-c", "envsubst '\\$API_URL' < /usr/share/nginx/html/my-login-app/assets/env.template.js > /usr/share/nginx/html/my-login-app/assets/env.js && exec nginx -g 'daemon off;'"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]
