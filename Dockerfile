@@ -1,26 +1,19 @@
-# ================================
-# Stage 1 - Build Angular App
-# ================================
-FROM node:20-alpine AS build
-
+# Stage 1: Build Angular app
+FROM node:18 AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm install
 COPY . .
-RUN npm run build --prod
+RUN npm run build --configuration=production
 
-# ================================
-# Stage 2 - Serve using Nginx
-# ================================
-FROM nginx:alpine
+# Stage 2: Serve with NGINX
+FROM nginx:1.25-alpine
 
 # Copy built Angular app
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/dist/angular-test /usr/share/nginx/html
 
-# Copy env template
+# Copy environment template
 COPY src/assets/env.template.js /usr/share/nginx/html/assets/env.template.js
 
-# Replace $API_URL in env.template.js at runtime
-CMD sh -c "envsubst '\$API_URL' < /usr/share/nginx/html/assets/env.template.js > /usr/share/nginx/html/assets/env.js && exec nginx -g 'daemon off;'"
-
-EXPOSE 80
+# Replace placeholder with runtime environment variable
+CMD ["/bin/sh", "-c", "envsubst '\\$API_URL' < /usr/share/nginx/html/assets/env.template.js > /usr/share/nginx/html/assets/env.js && exec nginx -g 'daemon off;'"]
