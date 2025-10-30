@@ -1,19 +1,29 @@
-# Stage 1: Build Angular app
+# ================================
+# Stage 1: Build Angular
+# ================================
 FROM node:18 AS build
 WORKDIR /app
+
+# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
+
+# Copy the entire Angular project
 COPY . .
-RUN npm run build --configuration=production --output-path=dist/my-login-app
 
-# Stage 2: Serve with NGINX
-FROM nginx:1.25-alpine
+# 🔥 Accept API_URL argument and replace in environment files
+ARG API_URL=https://api.example.com/v1/login
+RUN echo "🔧 Replacing API URL with ${API_URL}" && \
+    sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/environments/environment.ts && \
+    sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/environments/environment.prod.ts
 
-# Copy built app
-COPY --from=build /app/dist/my-login-app /usr/share/nginx/html/my-login-app
+# Build Angular for production
+RUN npm run build -- --configuration production
 
-# Copy env template
-COPY src/assets/env.template.js /usr/share/nginx/html/my-login-app/assets/env.template.js
-
-# Generate env.js from template and start NGINX
-CMD ["/bin/sh", "-c", "envsubst '\\$API_URL' < /usr/share/nginx/html/my-login-app/assets/env.template.js > /usr/share/nginx/html/my-login-app/assets/env.js && exec nginx -g 'daemon off;'"]
+# ================================
+# Stage 2: Serve with Nginx
+# ================================
+FROM nginx:alpine
+COPY --from=build /app/dist/my-login-app /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
