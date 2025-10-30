@@ -10,7 +10,7 @@ RUN npm install
 COPY . .
 RUN npm run build -- --configuration production
 
-# Stage 2: Serve built app with Nginx
+# Stage 2: Serve built app with Nginx 
 FROM nginx:alpine
 
 # Copy built app from previous stage
