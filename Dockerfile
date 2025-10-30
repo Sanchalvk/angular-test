@@ -1,32 +1,28 @@
-# ================================
-# Stage 1: Build Angular
-# ================================
+# Stage 1: Build Angular app
 FROM node:18 AS build
+
 WORKDIR /app
 
-# Install dependencies
+# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy the whole app
+# Copy the rest of the source code
 COPY . .
 
-# Build Angular for production
-RUN npm run build --configuration production 
+# Build the Angular app for production
+RUN npm run build --configuration=production --output-path=dist/my-login-app
 
 # ================================
 # Stage 2: Serve with NGINX
 # ================================
 FROM nginx:1.25-alpine
 
-# Copy built app from builder
+# Copy built Angular app from the build stage
 COPY --from=build /app/dist/my-login-app /usr/share/nginx/html
 
-# Copy the env template file into assets folder
+# Copy environment template
 COPY src/assets/env.template.js /usr/share/nginx/html/assets/env.template.js
 
-# Install envsubst (used for replacing $API_URL)
-RUN apk add --no-cache gettext
-
-# On container start: replace placeholder with real value
-CMD ["/bin/sh", "-c", "envsubst < /usr/share/nginx/html/assets/env.template.js > /usr/share/nginx/html/assets/env.js && nginx -g 'daemon off;'"]
+# Replace placeholder variable at container startup
+CMD ["/bin/sh", "-c", "envsubst '\\$API_URL' < /usr/share/nginx/html/assets/env.template.js > /usr/share/nginx/html/assets/env.js && exec nginx -g 'daemon off;'"]
