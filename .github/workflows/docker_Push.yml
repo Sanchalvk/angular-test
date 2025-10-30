@@ -27,5 +27,5 @@ jobs:
         with:
           context: . # 👈 updated path
           push: true
-          tags: sanchaljustgrow/ang-spring-frontend:latest
+          tags: sanchaljustgrow/ang-springs-frontend:latest
           platforms: linux/amd64
