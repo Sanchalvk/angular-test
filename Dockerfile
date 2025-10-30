@@ -4,26 +4,29 @@
 FROM node:18 AS build
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy the entire Angular project
+# Copy the whole app
 COPY . .
 
-# 🔥 Accept API_URL argument and replace in environment files
-ARG API_URL=https://api.example.com/v1/login
-RUN echo "🔧 Replacing API URL with ${API_URL}" && \
-    sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/app/environments/environment.ts && \
-    sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/app/environments/environment.prod.ts
-
 # Build Angular for production
-RUN npm run build -- --configuration production
+RUN npm run build --configuration production --output-path=dist/my-login-app
 
 # ================================
-# Stage 2: Serve with Nginx
+# Stage 2: Serve with NGINX
 # ================================
-FROM nginx:alpine
+FROM nginx:1.25-alpine
+
+# Copy built app from builder
 COPY --from=build /app/dist/my-login-app /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+
+# Copy the env template file into assets folder
+COPY src/assets/env.template.js /usr/share/nginx/html/assets/env.template.js
+
+# Install envsubst (used for replacing $API_URL)
+RUN apk add --no-cache gettext
+
+# On container start: replace placeholder with real value
+CMD ["/bin/sh", "-c", "envsubst < /usr/share/nginx/html/assets/env.template.js > /usr/share/nginx/html/assets/env.js && nginx -g 'daemon off;'"]
