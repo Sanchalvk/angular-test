@@ -14,8 +14,8 @@ COPY . .
 # 🔥 Accept API_URL argument and replace in environment files
 ARG API_URL=https://api.example.com/v1/login
 RUN echo "🔧 Replacing API URL with ${API_URL}" && \
-    sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/environments/environment.ts && \
-    sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/environments/environment.prod.ts
+    sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/app/environments/environment.ts && \
+    sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/app/environments/environment.prod.ts
 
 # Build Angular for production
 RUN npm run build -- --configuration production
