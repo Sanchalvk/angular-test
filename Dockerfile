@@ -12,7 +12,7 @@ RUN npm install
 COPY . .
 
 # 🔥 Replace API URL in both environment files before build
-ARG API_URL=https://dummyjson.com/auth/login
+ARG API_URL=https://api.example.com/v1/login
 RUN sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/app/environments/environment.ts && \
     sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/app/environments/environment.prod.ts
 
