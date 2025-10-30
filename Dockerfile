@@ -21,13 +21,13 @@ FROM nginx:alpine
 # Copy built Angular app from previous stage
 COPY --from=build /app/dist/ /usr/share/nginx/html/
 
-# Copy environment template (Angular reads this on runtime)
+# Copy environment template
 COPY src/assets/env.template.js /usr/share/nginx/html/assets/env.template.js
 
-# Install gettext for envsubst (used to inject runtime env vars)
+# Install gettext for envsubst
 RUN apk add --no-cache gettext
 
-# Create entrypoint for dynamic environment replacement
+# Create entrypoint script (IMPORTANT: no indentation here)
 RUN cat << 'EOF' > /entrypoint.sh
 #!/bin/sh
 # Default environment variable (can be overridden at runtime)
@@ -40,11 +40,7 @@ envsubst < /usr/share/nginx/html/assets/env.template.js > /usr/share/nginx/html/
 exec nginx -g "daemon off;"
 EOF
 
-# Make entrypoint executable
 RUN chmod +x /entrypoint.sh
 
-# Use the custom entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
-
-# Expose HTTP port
 EXPOSE 80
