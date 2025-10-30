@@ -12,7 +12,7 @@ RUN npm install
 COPY . .
 
 # Build Angular for production
-RUN npm run build --configuration production --output-path=dist
+RUN npm run build --configuration production 
 
 # ================================
 # Stage 2: Serve with NGINX
