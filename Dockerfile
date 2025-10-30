@@ -8,34 +8,12 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copy the entire Angular project and build it
+# Copy the entire Angular project
 COPY . .
+
+# 🔥 Replace API URL in environment.ts before building
+ARG API_URL=https://dummyjson.com/auth/login
+RUN sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/environments/environment.ts
+
+# Build the Angular app
 RUN npm run build -- --configuration production
-
-
-# ================================
-# Stage 2: Serve with NGINX
-# ================================
-FROM nginx:alpine
-
-# Copy built Angular app from previous stage
-COPY --from=build /app/dist/ /usr/share/nginx/html/
-
-# Copy environment template
-COPY src/assets/env.template.js /usr/share/nginx/html/assets/env.template.js
-
-# Install gettext for envsubst
-RUN apk add --no-cache gettext
-
-# Create entrypoint script
-RUN cat <<-'EOF' > /entrypoint.sh
-#!/bin/sh
-: "${API_URL:=https://api.mybackend.com/v1/login}"
-envsubst < /usr/share/nginx/html/assets/env.template.js > /usr/share/nginx/html/assets/env.js
-exec nginx -g "daemon off;"
-EOF
-
-RUN chmod +x /entrypoint.sh
-
-ENTRYPOINT ["/entrypoint.sh"]
-EXPOSE 80
