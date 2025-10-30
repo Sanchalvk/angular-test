@@ -1,5 +1,6 @@
-
-# Stage 1: Build Angular app
+# ================================
+# Stage 1: Build Angular App
+# ================================
 FROM node:18 AS build
 WORKDIR /app
 
@@ -7,27 +8,43 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copy source code and build Angular app
+# Copy the entire Angular project and build it
 COPY . .
 RUN npm run build -- --configuration production
 
-# Stage 2: Serve built app with Nginx
+
+# ================================
+# Stage 2: Serve with NGINX
+# ================================
 FROM nginx:alpine
 
-# Copy built app from previous stage
-COPY --from=build /app/dist/ /usr/share/nginx/html
+# Copy built Angular app from previous stage
+COPY --from=build /app/dist/ /usr/share/nginx/html/
 
-# Copy environment template
+# Copy environment template (Angular reads this on runtime)
 COPY src/assets/env.template.js /usr/share/nginx/html/assets/env.template.js
 
-# Install gettext for envsubst
+# Install gettext for envsubst (used to inject runtime env vars)
 RUN apk add --no-cache gettext
 
 # Create entrypoint for dynamic environment replacement
-RUN echo '#!/bin/sh\n\
-: "${API_URL:=https://api.mybackend.com/v1/login}"\n\
-envsubst < /usr/share/nginx/html/assets/env.template.js > /usr/share/nginx/html/assets/env.js\n\
-exec nginx -g "daemon off;"' > /entrypoint.sh && chmod +x /entrypoint.sh
+RUN cat << 'EOF' > /entrypoint.sh
+#!/bin/sh
+# Default environment variable (can be overridden at runtime)
+: "${API_URL:=https://api.mybackend.com/v1/login}"
 
+# Replace template variables in env.template.js
+envsubst < /usr/share/nginx/html/assets/env.template.js > /usr/share/nginx/html/assets/env.js
+
+# Start NGINX
+exec nginx -g "daemon off;"
+EOF
+
+# Make entrypoint executable
+RUN chmod +x /entrypoint.sh
+
+# Use the custom entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
+
+# Expose HTTP port
 EXPOSE 80
