@@ -23,10 +23,14 @@ COPY src/assets/env.template.js /usr/share/nginx/html/assets/env.template.js
 RUN apk add --no-cache gettext
 
 # Create entrypoint for dynamic environment replacement
-RUN echo '#!/bin/sh\n\
-: "${API_URL:=https://api.mybackend.com/v1/login}"\n\
-envsubst < /usr/share/nginx/html/assets/env.template.js > /usr/share/nginx/html/assets/env.js\n\
-exec nginx -g "daemon off;"' > /entrypoint.sh && chmod +x /entrypoint.sh
+RUN cat << 'EOF' > /entrypoint.sh
+#!/bin/sh
+: "${API_URL:=https://api.mybackend.com/v1/login}"
+envsubst < /usr/share/nginx/html/assets/env.template.js > /usr/share/nginx/html/assets/env.js
+exec nginx -g "daemon off;"
+EOF
+
+RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 EXPOSE 80
