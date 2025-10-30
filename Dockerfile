@@ -11,9 +11,18 @@ RUN npm install
 # Copy the entire Angular project
 COPY . .
 
-# 🔥 Replace API URL in environment.ts before building
+# 🔥 Replace API URL in both environment files before build
 ARG API_URL=https://dummyjson.com/auth/login
-RUN sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/environments/environment.ts
+RUN sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/app/environments/environment.ts && \
+    sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" src/app/environments/environment.prod.ts
 
-# Build the Angular app
+# Build Angular for production
 RUN npm run build -- --configuration production
+
+# ================================
+# Stage 2: Serve with Nginx
+# ================================
+FROM nginx:alpine
+COPY --from=build /app/dist/my-login-app /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
