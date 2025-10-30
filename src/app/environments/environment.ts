@@ -1,6 +1,6 @@
 
 export const environment = {
     production: false,
-    apiUrl: 'https://task.thingsrms.com/v1' // Change this for production
+    apiUrl: 'https://dummyjson.com/auth/login' // Change this for production
   };
   
